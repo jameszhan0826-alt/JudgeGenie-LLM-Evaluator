@@ -107,11 +107,12 @@ const App: React.FC = () => {
         </div>
 
         {/* Scorecard Results (Full Width) */}
-        {evaluation && (
+        {(evaluation || loadingState === LoadingState.EVALUATING) && (
           <div id="scorecard-section">
             <Scorecard 
               evaluation={evaluation} 
               onUpdate={setEvaluation}
+              isLoading={loadingState === LoadingState.EVALUATING}
             />
           </div>
         )}

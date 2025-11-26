@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { LoadingState } from '../types';
-import ReactMarkdown from 'react-markdown';
 
 interface SummarySectionProps {
   summary: string;
@@ -52,6 +51,22 @@ const SummarySection: React.FC<SummarySectionProps> = ({
     );
   }
 
+  // Helper to render text with bold support without heavy libraries
+  const renderContent = (text: string) => {
+    // Split by **text** patterns
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return (
+      <div className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed">
+        {parts.map((part, index) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={index} className="text-slate-900">{part.slice(2, -2)}</strong>;
+          }
+          return <span key={index}>{part}</span>;
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col h-full relative overflow-hidden">
       <div className="mb-4 flex items-center justify-between">
@@ -92,7 +107,7 @@ const SummarySection: React.FC<SummarySectionProps> = ({
           />
         ) : (
           <div className="prose prose-slate prose-sm max-w-none pr-2">
-            <ReactMarkdown>{summary}</ReactMarkdown>
+            {renderContent(summary)}
           </div>
         )}
       </div>

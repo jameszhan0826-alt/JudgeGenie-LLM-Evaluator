@@ -1,14 +1,17 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { GoogleGenAI, Type, type Schema } from "@google/genai";
 import { EvaluationResult } from "../types";
 
-// Initialize the client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to get initialized client safely
+const getAiClient = () => {
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+};
 
 /**
  * Generates a summary using the faster Gemini 2.5 Flash model.
  */
 export const generateMeetingSummary = async (transcript: string): Promise<string> => {
   try {
+    const ai = getAiClient();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `You are a precise minute-taker. Generate a structured summary of the following transcript.
@@ -43,6 +46,7 @@ export const evaluateSummaryQuality = async (
   generatedSummary: string
 ): Promise<EvaluationResult> => {
   try {
+    const ai = getAiClient();
     const evaluationSchema: Schema = {
       type: Type.OBJECT,
       properties: {
@@ -117,8 +121,15 @@ export const evaluateSummaryQuality = async (
       }
     });
 
-    const jsonText = response.text;
+    let jsonText = response.text;
     if (!jsonText) throw new Error("No evaluation generated");
+
+    // Clean up markdown code blocks if present
+    if (jsonText.includes("```json")) {
+      jsonText = jsonText.replace(/```json/g, "").replace(/```/g, "");
+    } else if (jsonText.includes("```")) {
+      jsonText = jsonText.replace(/```/g, "");
+    }
 
     const result = JSON.parse(jsonText) as EvaluationResult;
     return result;
