@@ -22,12 +22,12 @@ const ScoreBar: React.FC<ScoreBarProps> = ({ label, metric, colorClass, isEditin
     onUpdate({ ...metric, score: isNaN(val) ? 0 : val });
   };
 
-  const handleReasoningChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReasoningChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onUpdate({ ...metric, reasoning: e.target.value });
   };
 
   return (
-    <div className="mb-4 group bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+    <div className="mb-4 group bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors h-full flex flex-col">
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-3">
           <div className="bg-white p-2 rounded-lg shadow-sm text-slate-600 border border-slate-100">
@@ -65,19 +65,21 @@ const ScoreBar: React.FC<ScoreBarProps> = ({ label, metric, colorClass, isEditin
         </div>
       )}
 
-      {isEditing ? (
-        <input 
-          type="text" 
-          value={metric.reasoning} 
-          onChange={handleReasoningChange}
-          placeholder="Reasoning..."
-          className="w-full text-xs text-slate-600 bg-white p-2.5 rounded border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
-        />
-      ) : (
-        <p className="text-xs text-slate-600 leading-relaxed pl-1 border-l-2 border-slate-300">
-          {metric.reasoning}
-        </p>
-      )}
+      <div className="flex-grow">
+        {isEditing ? (
+          <textarea 
+            value={metric.reasoning} 
+            onChange={handleReasoningChange} // Use textarea for editing reasoning to allow more text
+            placeholder="Reasoning..."
+            rows={4}
+            className="w-full text-xs text-slate-600 bg-white p-2.5 rounded border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none resize-none"
+          />
+        ) : (
+          <p className="text-xs text-slate-600 leading-relaxed pl-1 border-l-2 border-slate-300">
+            {metric.reasoning}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
@@ -95,15 +97,16 @@ const ScorecardSkeleton = () => (
             <div className="h-4 w-24 bg-slate-200 rounded"></div>
          </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-slate-50 p-4 rounded-xl border border-slate-100 h-40">
+      {/* Updated to grid-cols-2 md:grid-cols-4 for 4 metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-slate-50 p-4 rounded-xl border border-slate-100 h-48">
              <div className="flex justify-between mb-3">
                <div className="h-8 w-8 bg-slate-200 rounded"></div>
                <div className="h-6 w-12 bg-slate-200 rounded"></div>
              </div>
              <div className="h-2.5 w-full bg-slate-200 rounded-full mb-3"></div>
-             <div className="h-12 w-full bg-slate-200 rounded"></div>
+             <div className="h-20 w-full bg-slate-200 rounded"></div>
           </div>
         ))}
       </div>
@@ -122,12 +125,10 @@ const Scorecard: React.FC<ScorecardProps> = ({ evaluation, onUpdate, isLoading =
   useEffect(() => {
     if (evaluation) {
       setLocalEval(evaluation);
-      // Reset edit mode when new external data comes in (e.g. after re-evaluation)
       setIsEditing(false);
     }
   }, [evaluation]);
 
-  // Render skeleton for initial load (when loading and no previous data)
   if (isLoading && !localEval) {
       return <ScorecardSkeleton />;
   }
@@ -140,8 +141,11 @@ const Scorecard: React.FC<ScorecardProps> = ({ evaluation, onUpdate, isLoading =
     return 'bg-rose-500';
   };
 
-  const handleMetricUpdate = (key: keyof Pick<EvaluationResult, 'accuracy' | 'completeness' | 'structure'>, newMetric: EvaluationMetric) => {
-    setLocalEval(prev => prev ? { ...prev, [key]: newMetric } : null);
+  const handleMetricUpdate = (key: keyof EvaluationResult, newMetric: EvaluationMetric) => {
+    // Only update metric fields, ignore primitives like overallScore
+    if (typeof localEval[key] === 'object') {
+       setLocalEval(prev => prev ? { ...prev, [key]: newMetric } : null);
+    }
   };
 
   const handleOverallScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,7 +175,6 @@ const Scorecard: React.FC<ScorecardProps> = ({ evaluation, onUpdate, isLoading =
   return (
     <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden mt-6 animate-fade-in-up relative">
       
-      {/* Loading Overlay for Re-evaluation */}
       {isLoading && (
         <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex items-center justify-center transition-all duration-300">
            <div className="flex flex-col items-center bg-white p-6 rounded-2xl shadow-xl border border-slate-100 transform scale-100 animate-bounce-slight">
@@ -248,7 +251,8 @@ const Scorecard: React.FC<ScorecardProps> = ({ evaluation, onUpdate, isLoading =
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Updated Grid for 4 items */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <ScoreBar 
             label="Accuracy" 
             metric={localEval.accuracy} 
@@ -270,6 +274,19 @@ const Scorecard: React.FC<ScorecardProps> = ({ evaluation, onUpdate, isLoading =
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            }
+          />
+          <ScoreBar 
+            label="Coverage" 
+            metric={localEval.coverage} 
+            colorClass={getScoreColor(localEval.coverage.score)} 
+            isEditing={isEditing}
+            onUpdate={(m) => handleMetricUpdate('coverage', m)}
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
               </svg>
             }
           />

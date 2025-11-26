@@ -7,6 +7,7 @@ export interface EvaluationResult {
   accuracy: EvaluationMetric;
   completeness: EvaluationMetric;
   structure: EvaluationMetric;
+  coverage: EvaluationMetric;
   overallScore: number;
   overallComment: string;
 }

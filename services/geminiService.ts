@@ -66,6 +66,14 @@ export const evaluateSummaryQuality = async (
           },
           required: ["score", "reasoning"],
         },
+        coverage: {
+          type: Type.OBJECT,
+          properties: {
+            score: { type: Type.NUMBER, description: "Score from 1-10." },
+            reasoning: { type: Type.STRING, description: "Assessment of topic breadth and balance." },
+          },
+          required: ["score", "reasoning"],
+        },
         structure: {
           type: Type.OBJECT,
           properties: {
@@ -77,7 +85,7 @@ export const evaluateSummaryQuality = async (
         overallScore: { type: Type.NUMBER, description: "Overall quality score 1-10." },
         overallComment: { type: Type.STRING, description: "Final verdict summary." },
       },
-      required: ["accuracy", "completeness", "structure", "overallScore", "overallComment"],
+      required: ["accuracy", "completeness", "coverage", "structure", "overallScore", "overallComment"],
     };
 
     const response = await ai.models.generateContent({
@@ -95,14 +103,19 @@ export const evaluateSummaryQuality = async (
       1. **Accuracy** (Score 1-10):
          - Focus: Hallucinations & Attribution.
          - Check: Did Speaker A actually say what is attributed to them in the Notes?
-         - Check: Are Action Items assigned to the correct person? (e.g., If Transcript says "John will do X", but Action Item says "Sarah: X", this is a major error).
+         - Check: Are Action Items assigned to the correct person?
 
       2. **Completeness** (Score 1-10):
-         - Focus: Omissions.
-         - Check: Are there any significant decisions in the Transcript that are missing from the Notes?
-         - Check: Are there any tasks agreed upon in the Transcript that are missing from the Action Items?
+         - Focus: Omissions of Details.
+         - Check: Are there any specific decisions, dates, or numbers in the Transcript that are missing from the Notes?
+         - Check: Are there any specific tasks agreed upon that are missing from the Action Items?
 
-      3. **Structure** (Score 1-10):
+      3. **Coverage** (Score 1-10):
+         - Focus: Topic Breadth & Balance.
+         - Check: Did the summary cover all the distinct agenda items or discussion threads found in the transcript?
+         - Check: Is the summary balanced, or does it overly focus on one minor part of the conversation while ignoring others?
+
+      4. **Structure** (Score 1-10):
          - Focus: Formatting & Organization.
          - Check: Are the headers "**Meeting Notes**" and "**Action Items**" present?
          - Check: Is the formatting clean (bullet points, bold text)?
