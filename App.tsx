@@ -269,6 +269,32 @@ const App: React.FC = () => {
     }
   };
 
+  const inputRef = useRef<HTMLDivElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const mindmapRef = useRef<HTMLDivElement>(null);
+  const infographicRef = useRef<HTMLDivElement>(null);
+  const emotionRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<HTMLDivElement>(null);
+  const judgeRef = useRef<HTMLDivElement>(null);
+  const comparisonRef = useRef<HTMLDivElement>(null);
+  const recapRef = useRef<HTMLDivElement>(null);
+
+  const sectionRefs: { [key: string]: React.RefObject<HTMLDivElement> } = {
+    input: inputRef,
+    summary: summaryRef,
+    mindmap: mindmapRef,
+    infographic: infographicRef,
+    emotion: emotionRef,
+    player: playerRef,
+    judge: judgeRef,
+    comparison: comparisonRef,
+    recap: recapRef,
+  };
+
+  const scrollToSection = (id: string) => {
+    sectionRefs[id]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const sections: { [key: string]: React.ReactNode } = {
     input: <InputSection 
       transcript={transcript} 
@@ -295,6 +321,13 @@ const App: React.FC = () => {
       setSummary={setSummary} 
       loadingState={loadingState} 
       onJudgeSummary={handleJudgeSummary}
+      onGenerate={handleGenerateSummary}
+      onRelink={(text) => {
+        setSummary(text);
+        saveToHistory({ summary: text });
+        changeLogService.addLog('Notes Relinked', 'Manual input');
+        setLogs(changeLogService.getLogs());
+      }}
     />,
     mindmap: (mindMapData || loadingState === LoadingState.GENERATING_MINDMAP) && (
       <div id="mindmap-section">
@@ -313,7 +346,7 @@ const App: React.FC = () => {
         />
       </div>
     ),
-    emotion: (emotionData || loadingState === LoadingState.ANALYZING_EMOTION) && (
+    emotion: (
       <div id="emotion-section">
         <EmotionAnalysis 
           data={emotionData}
@@ -343,7 +376,7 @@ const App: React.FC = () => {
         isLoading={loadingState === LoadingState.COMPARING_TRANSCRIPT}
       />
     ),
-    recap: (audioRecap || loadingState === LoadingState.GENERATING_AUDIO_RECAP) && (
+    recap: (
       <AudioRecap 
         audioBase64={audioRecap}
         onGenerate={handleGenerateAudioRecap}
@@ -370,19 +403,23 @@ const App: React.FC = () => {
             </h1>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
               {[
-                { name: 'Transcript', icon: FileText },
-                { name: 'Notes & Actions', icon: CheckSquare },
-                { name: 'Compare & Judge', icon: Scale },
-                { name: 'Mindmap', icon: Share2 },
-                { name: 'Infographic', icon: BarChart3 },
-                { name: 'Video Highlights', icon: Film },
-                { name: 'Audio Recap', icon: Mic },
-                { name: 'Emotion (Upcoming)', icon: Smile },
+                { name: 'Transcript', icon: FileText, id: 'input' },
+                { name: 'Notes & Actions', icon: CheckSquare, id: 'summary' },
+                { name: 'Compare & Judge', icon: Scale, id: 'judge' },
+                { name: 'Mindmap', icon: Share2, id: 'mindmap' },
+                { name: 'Infographic', icon: BarChart3, id: 'infographic' },
+                { name: 'Video Highlights', icon: Film, id: 'player' },
+                { name: 'Audio Recap', icon: Mic, id: 'recap' },
+                { name: 'Emotion', icon: Smile, id: 'emotion' },
               ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm text-sm font-medium text-slate-700 hover:border-brand-300 transition">
+                <button 
+                  key={i} 
+                  onClick={() => scrollToSection(item.id)} 
+                  className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm text-sm font-medium text-slate-700 hover:border-brand-300 transition"
+                >
                   <item.icon className="w-4 h-4 text-brand-600" />
                   {item.name}
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -428,9 +465,11 @@ const App: React.FC = () => {
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
             {sectionOrder.map((id) => (
-              <SortableSection key={id} id={id}>
-                {sections[id]}
-              </SortableSection>
+              <div key={id} ref={sectionRefs[id]} className="scroll-mt-6">
+                <SortableSection id={id}>
+                  {sections[id]}
+                </SortableSection>
+              </div>
             ))}
           </SortableContext>
         </DndContext>
